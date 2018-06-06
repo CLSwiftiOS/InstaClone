@@ -17,6 +17,8 @@ class ViewController: UIViewController, CLLocationManagerDelegate, CBCentralMana
     @IBOutlet weak var lblZwei: UILabel!
     @IBOutlet weak var lblDrei: UILabel!
     
+    @IBOutlet weak var viewBüro2: UIView!
+    @IBOutlet weak var viewBüro1: UIView!
     let locationManager = CLLocationManager()
     let SetupView = ViewControllerSetup()
     var bManager = CBCentralManager()
@@ -29,10 +31,9 @@ class ViewController: UIViewController, CLLocationManagerDelegate, CBCentralMana
     var pointPath = UIBezierPath()
     let trackLayerBeacon = CAShapeLayer()
     var letzterOrt = String()
-    let date = Date()
-    let formatter = DateFormatter()
     var ready = Bool()
-    
+    var room = Int()
+    var center = CGPoint()
   
     
     
@@ -45,13 +46,19 @@ class ViewController: UIViewController, CLLocationManagerDelegate, CBCentralMana
     }
     
     func startSetup() {
-        ready = false
+        let NummernObject = UserDefaults.standard.object(forKey: "ready") //Daten laden
+        if let sReady = NummernObject as! Bool? {
+            ready = sReady
+        }
+        let UserObject = UserDefaults.standard.object(forKey: "User") //Daten laden
+        if let sUser = UserObject as! String? {
+            activeUser = sUser
+        }
         locationManager.requestAlwaysAuthorization()
         locationManager.delegate = self
         bManager.delegate = self
         locationManager.startRangingBeacons(in: region)
-        formatter.timeStyle = .medium
-        //setTrackPoint()
+       
     }
     
     func locationManager(_ manager: CLLocationManager, monitoringDidFailFor region: CLRegion?, withError error: Error) {
@@ -68,6 +75,9 @@ class ViewController: UIViewController, CLLocationManagerDelegate, CBCentralMana
     }
     
     func saveLocation() {
+        let formatter = DateFormatter()
+        formatter.timeStyle = .medium
+        let date = Date()
         let BenutzerOrte = PFObject(className:"BenutzerOrte")
         BenutzerOrte["Ort"] = vLocation
         BenutzerOrte["minior"] = activeBeaconMinior
@@ -93,13 +103,21 @@ class ViewController: UIViewController, CLLocationManagerDelegate, CBCentralMana
                 activeBeaconMinior = Int(nearestBeacon.minor)
                 switch nearestBeacon.minor {
                 case 22438: vLocation = "Büro oben 1"
+                    center = viewBüro1.center
                 case 3290: vLocation = "Büro oben 2"
+                    center = viewBüro2.center
                 case 22936: vLocation = "Küche oben"
+                    center = viewBüro2.center
                 case 35885: vLocation = "Bad oben"
+                    center = viewBüro2.center
                 case 17221: vLocation = "Küche unten"
+                    center = viewBüro2.center
                 case 37769: vLocation = "Creativ Room"
+                    center = viewBüro2.center
                 case 28501: vLocation = "offenes Büro"
+                    center = viewBüro2.center
                 default: vLocation = "Flur"
+                    
                 }
                 
                 if nearestBeacon.accuracy < 1.0 {
@@ -111,6 +129,7 @@ class ViewController: UIViewController, CLLocationManagerDelegate, CBCentralMana
                         } else {
                             letzterOrt = vLocation
                             saveLocation()
+                            setTrackPoint()
                         }
                     }
                 } else {
@@ -124,15 +143,20 @@ class ViewController: UIViewController, CLLocationManagerDelegate, CBCentralMana
     }
     
     func setTrackPoint() {
-        var center = CGPoint()
+        var vPostion = trackLayerBeacon.position
+        let moveAnimation = CABasicAnimation(keyPath: "position")
+        moveAnimation.duration = 1.5
+        moveAnimation.fromValue = vPostion
+        moveAnimation.toValue = center
         pointPath = UIBezierPath(arcCenter: .zero, radius: 15, startAngle: 0, endAngle: 2 * CGFloat.pi, clockwise: true)
         trackLayerBeacon.path = pointPath.cgPath
         trackLayerBeacon.strokeColor = UIColor.darkGray.cgColor
         trackLayerBeacon.fillColor = UIColor.black.cgColor
         trackLayerBeacon.lineWidth = 10
         trackLayerBeacon.lineCap = kCALineCapRound
-        trackLayerBeacon.position = view.center
+        trackLayerBeacon.position = center
         view.layer.addSublayer(trackLayerBeacon)
+        trackLayerBeacon.add(moveAnimation, forKey: "move")
     }
     
     

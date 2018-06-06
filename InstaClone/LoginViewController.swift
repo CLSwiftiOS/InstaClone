@@ -25,6 +25,7 @@ class LoginViewController: UIViewController {
     var activePassword = String()
     var whichSegment = Int()
     
+    
     @IBAction func SegmentControll(_ sender: Any) {
         switch segmentedControl.selectedSegmentIndex {
         case 0:
@@ -44,20 +45,49 @@ class LoginViewController: UIViewController {
     }
     
     func myMethod() {
-        if whichSegment == 1 {
-            performSegue(withIdentifier: "MapView", sender: nil)
-        } else {
-            var user = PFUser()
-            user.username = activeUser
-            user.password = activePassword
+        let user = PFUser()
+        user.username = activeUser
+        user.password = activePassword
+        
+        if whichSegment == 1 { //login, es wird nichts gespeichert.
+            PFUser.logInWithUsername(inBackground: user.username!, password: user.password!) { (user, error: Error?) in
+                
+                if ((user) != nil) {
+                    print("Login success")
+                    self.ready = true
+                    UserDefaults.standard.set(self.ready, forKey: "ready") //Daten speichern
+                    UserDefaults.standard.set(self.activeUser, forKey: "User")
+                    self.activePassword = ""
+                    self.activeUser = ""
+                    self.txtPassword.text = ""
+                    self.txtBenutzer.text = ""
+                   self.performSegue(withIdentifier: "MapView", sender: nil)
+                } else {
+                    print(error)
+                    let alert = UIAlertController(title: "LogIn Error", message: "LogIn fehlgeschlagen", preferredStyle: .alert)
+                    alert.addAction(UIAlertAction(title: "Ok", style: .default, handler: nil))
+                    self.present(alert, animated: true)
+                }
+            }
+            
+        } else { //SignUp, Benutzer wird erstellt und gespeichert
+            //performSegue(withIdentifier: "MapView", sender: nil)
+            
             //user.email = "email@example.com"
             //user["phone"] = "415-392-0202"
             user.signUpInBackground {
                 (success: Bool, error: Error?) in
                 if (success) {
                     print(success)
+                    self.activePassword = ""
+                    self.activeUser = ""
+                    self.txtPassword.text = ""
+                    self.txtBenutzer.text = ""
                 } else {
                     print(error)
+                    let alert = UIAlertController(title: "Benutzername", message: "Benutzername schon vergeben!", preferredStyle: .alert)
+                    alert.addAction(UIAlertAction(title: "Ok", style: .default, handler: nil))
+                    self.present(alert, animated: true)
                 }
             }
         }
@@ -70,24 +100,31 @@ class LoginViewController: UIViewController {
             alert.addAction(UIAlertAction(title: "Ok", style: .default, handler: nil))
             self.present(alert, animated: true)
         } else {
-            if (txtPassword.text?.count)! < 5 {
-                let alert = UIAlertController(title: "Password", message: "Das Passwort ist zu kurz. Bitte min. 6 Zeichen verwenden", preferredStyle: .alert)
+           activeUser = txtBenutzer.text!
+            if activeUser.contains(" ") {
+                let alert = UIAlertController(title: "Information", message: "Leerzeichen sind nicht erlaubt", preferredStyle: .alert)
                 alert.addAction(UIAlertAction(title: "Ok", style: .default, handler: nil))
                 self.present(alert, animated: true)
+                print("beinhaltet leerschritt")
             } else {
-                ready = true
-                activeUser = txtBenutzer.text!
-                activePassword = txtPassword.text!
-                //txtBenutzer.isUserInteractionEnabled = false
-                //txtPassword.isUserInteractionEnabled = false
-                myMethod()
+                if (txtPassword.text?.count)! < 5 {
+                    let alert = UIAlertController(title: "Password", message: "Das Passwort ist zu kurz. Bitte min. 6 Zeichen verwenden", preferredStyle: .alert)
+                    alert.addAction(UIAlertAction(title: "Ok", style: .default, handler: nil))
+                    self.present(alert, animated: true)
+                } else {
+                    
+                    activeUser = txtBenutzer.text!
+                    activePassword = txtPassword.text!
+                    //txtBenutzer.isUserInteractionEnabled = false
+                    //txtPassword.isUserInteractionEnabled = false
+                    myMethod()
+            }
             }
             }
         }
 
     override func viewDidLoad() {
         super.viewDidLoad()
-
         // Do any additional setup after loading the view.
     }
 
